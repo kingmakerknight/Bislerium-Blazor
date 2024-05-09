@@ -1,5 +1,14 @@
-﻿@layout EmptyLayout
-@page "/login"
+﻿@page "/login"
+@layout EmptyLayout
+@using System.Text.Json
+@using Blazored.LocalStorage
+@using SocialFeed.Models
+@using SocialFeed.Models.Request
+@using SocialFeed.Models.Response
+@using SocialFeed.Services.Base
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService LocalStorage
+@inject BaseService BaseService
 
 <PageTitle>Login</PageTitle>
 
@@ -29,19 +38,22 @@
                         <div class="card-body p-4">
                             <div class="text-center w-75 m-auto">
                                 <h4 class="text-dark-50 text-center pb-0 fw-bold">Sign In</h4>
-                                <p class="text-muted mb-4">Enter your email address and password to access admin panel.</p>
+                                <p class="text-muted mb-4">Enter your username and password to access admin panel.</p>
                             </div>
 
-                            <form action="#">
+                            <form @onsubmit="@HandleValidSubmit">
+                                <AntiforgeryToken />
                                 <div class="mb-3">
-                                    <label for="emailaddress" class="form-label">Email address</label>
-                                    <input class="form-control" type="email" id="emailaddress" required="" placeholder="Enter your email">
+                                    <label for="emailaddress" class="form-label">Email Address</label>
+                                    <input class="form-control" @bind="_loginRequestDto.EmailAddress" type="email" id="emailaddress" required="" placeholder="Enter your email address">
                                 </div>
                                 <div class="mb-3">
-                                    <a href="pages-recoverpw.html" class="text-muted float-end"><small>Forgot your password?</small></a>
+                                    <NavLink class="nav-link" href="reset-password">
+                                        <small class="text-muted float-end">Forgot your password?</small>
+                                    </NavLink>
                                     <label for="password" class="form-label">Password</label>
                                     <div class="input-group input-group-merge">
-                                        <input type="password" id="password" class="form-control" placeholder="Enter your password">
+                                        <input type="password" @bind="_loginRequestDto.Password" id="password" class="form-control" placeholder="Enter your password">
                                         <div class="input-group-text" data-password="false">
                                             <span class="password-eye"></span>
                                         </div>
@@ -61,7 +73,11 @@
                     </div>
                     <div class="row mt-3">
                         <div class="col-12 text-center">
-                            <p class="text-muted">Don't have an account? <a href="pages-register.html" class="text-muted ms-1"><b>Sign Up</b></a></p>
+                            <p class="text-muted">Don't have an account?
+                                <NavLink class="nav-link" href="register">
+                                    <b>Sign Up</b>
+                                </NavLink>
+                            </p>
                         </div> 
                     </div>
                 </div> 
@@ -69,3 +85,54 @@
         </div>
     </div>
 </div>
+
+@code{
+    private string Message = "";
+    
+    [CascadingParameter]
+    private GlobalState? GlobalState { get; set; }
+    
+    private readonly LoginRequestDto _loginRequestDto = new();
+
+    private async Task HandleValidSubmit()   
+    {
+        try
+        {
+            var loginRequest = new LoginRequestDto()
+            {
+                EmailAddress = _loginRequestDto.EmailAddress,
+                Password = _loginRequestDto.Password
+            };
+
+            var jsonRequest = JsonSerializer.Serialize(loginRequest);
+
+            var content = new StringContent(jsonRequest, System.Text.Encoding.UTF8, "application/json");
+
+            var authResult = await BaseService.PostAsync<Derived<LoginResponseDto>>("account/login", content);
+          
+            await LocalStorage.SetItemAsync("access_token", authResult?.Result.Token ?? "");
+
+            if (GlobalState == null)
+            {
+                var globalState = new GlobalState()
+                {
+                    UserId = authResult?.Result.Id ?? 0,
+                    RoleId = authResult?.Result.RoleId ?? 0,
+                    Name = authResult?.Result.Name ?? string.Empty,
+                    RoleName = authResult?.Result.Role ?? string.Empty,
+                    ImageUrl = authResult?.Result.ImageUrl ?? string.Empty,
+                };
+
+                GlobalState = globalState;
+            }
+
+            var navigation = "/feeds";
+
+            NavigationManager.NavigateTo(navigation);
+        }
+        catch (Exception ex)
+        {
+            Message = "The username or password is incorrect. Try again.";      
+        }
+    }
+}

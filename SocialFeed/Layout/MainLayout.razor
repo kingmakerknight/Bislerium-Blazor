@@ -1,38 +1,54 @@
-﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
-        <NavMenu/>
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <div class="about">
-                <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-            </div>
-            <div class="myProfile">
-                <a href="profile">My Profile</a>
-            </div>
-            <div class="account-wrapper btn-group">
-                <button type="button" class="btn p-0 dropdown-toggle d-flex align-items-center text-start"
-                    data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="user-info">
-                    <p class="text-grey text-grey my-0">Sid Pradhan</p>
-                    </span>
-                    <span class="user-image">
-                    <img src="images/users/avatar-3.jpg" alt="User Photo" width="35" height="35" class="mx-2 rounded" />
-                    </span>
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a href="profile">My Profile</a></li>
-                    <li>
-                    <a href="login">Logout</a>
-                    </li>
-                </ul>
-            </div>
+﻿@using SocialFeed.Models
+@inherits LayoutComponentBase
+<CascadingValue Value="@_globalState">
+    <div class="page">
+        <div class="sidebar">
+            <NavMenu/>
         </div>
+        <main>
+            <div class="top-row px-4">
+                <div class="about">
+                    <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+                </div>
+                @if (_globalState.UserId != 0)
+                {
+                    <div class="myProfile">
+                        <a href="profile">My Profile</a>
+                    </div>
+                    <div class="account-wrapper btn-group">
+                        <button type="button" class="btn p-0 dropdown-toggle d-flex align-items-center text-start"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="user-info">
+                                <p class="text-grey text-grey my-0">@_globalState.Name</p>
+                                <p class="text-dark my-0">@_globalState.RoleName</p>
+                            </span>
+                            @{
+                                var image = $"https://localhost:44391/user-images/{_globalState.ImageUrl}";
+                            }
+                            <span class="user-image">
+                                <img src="@image" alt="User Photo" width="35" height="35" class="mx-2 rounded" />
+                            </span>
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="myProfile">
+                        <a href="register">Register</a>
+                    </div>
+                    <div class="myProfile">
+                        <a href="login">Login</a>
+                    </div>
+                }
+            </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
+    </div>
+</CascadingValue>
+
+@code{
+    private readonly GlobalState _globalState = new();
+}

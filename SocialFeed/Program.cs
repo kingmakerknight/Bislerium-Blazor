@@ -1,11 +1,32 @@
+using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using SocialFeed;
+using SocialFeed.Services;
+using SocialFeed.Services.Base;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
+
 builder.RootComponents.Add<App>("#app");
+
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+var apiUrl = AppConfiguration.BaseUrl;
+
+builder.Services.AddScoped(x => new HttpClient
+{
+    BaseAddress = new Uri(apiUrl)
+});
+
+builder.Services.AddTransient<BaseService>();
+
+builder.Services.AddBlazoredLocalStorage();
+
+builder.Services.AddAuthorizationCore();
+
+builder.Services.AddScoped(sp => new HttpClient
+{
+    BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
+});
 
 await builder.Build().RunAsync();
